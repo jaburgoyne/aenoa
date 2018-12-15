@@ -1,0 +1,380 @@
+---
+title: "Four Statistical Tests"
+author: John Ashley Burgoyne
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(tidyverse)
+library(effsize)
+knitr::opts_chunk$set(echo = FALSE)
+billboard <- aenoa::billboard
+billboard_plus <- 
+    billboard %>% mutate(tempo_beats = tempo * duration_seconds / 60)
+```
+
+## Packages and Data
+
+### Packages
+
+This tutorial uses the following packages:
+
+* **effsize** for computing Cohen's *d*
+* **tidyverse** for general data processing
+
+### Data
+
+This tutorial has a data files pre-loaded as the variable `billboard`. The data
+are a subset of the 
+[McGill Billboard data set](http://ddmal.music.mcgill.ca/research/billboard).
+This data set contains a random sample of popular songs from the *Billboard* Hot
+100 chart for popular music in the U.S. For each song, this tutorial subset
+contains eight columns.
+
+| Column Name | Description  |
+|---|------------------------------------------|
+| **year** | Year the song was released |
+| **tonic** | Letter name of the tonic key of the song |
+| **mode** | Mode of the tonic key of the song (major or minor) |
+| **tempo** | Tempo of the song in beats per minute |
+| **loudness** | Loudness of the song (in decibels relative to full scale [dBFS]; –96 dbFS is the softest possible song and 0 dbFS is the loudest possible) |
+| **danceability** | Spotify’s prediction of how ‘danceable’ the song is (0 is the least danceable and 1 is the most danceable) |
+| **duration_seconds** | Length of the song in seconds |
+| **duration_beats** | Length of the song in musical beats |
+
+Use the box below to view the raw data.
+
+```{r billboard-view, exercise = TRUE}
+```
+
+```{r billboard-view-solution}
+billboard
+```
+
+## Descriptive Statistics
+
+Before beginning with statistical tests, it is important to get a sense of the 
+data through plots and basic descriptive statistics.
+
+### Categorical (Nominal) Variables
+
+We use bar charts to visualise nominal variables. The following code chunk 
+displays a bar chart for `mode`. Revise it to make one for `tonic`. What is the
+mode of the distribution of tonics?
+
+```{r geom-bar, exercise = TRUE}
+ggplot(billboard, aes(x = mode)) + 
+    geom_bar() +
+    labs(x = "Mode", y = "Count")
+```
+
+### Continuous Variables
+
+We use histograms to visualise continuous variables. The following code chunk
+displays a bar chart for `duration_seconds`.
+
+Revise it to make one for `danceability`.
+
+```{r geom-histogram, exercise = TRUE}
+ggplot(billboard, aes(x = duration_seconds)) +
+    geom_histogram(binwidth = 30) +
+    labs(x = "Duration (s)", y = "Count")
+```
+
+```{r skew}
+quiz(
+    question(
+        "Is danceability positively or negatively skewed (the third moment)?",
+        answer("Positively"),
+        answer("Negatively", correct = TRUE),
+        answer("Neither"),
+        allow_retry = TRUE             
+    )
+)
+```
+
+You may also wish to explore some of the other continuous variables in the code
+box above.
+
+The following code box computes the means of the continuous variables, one of
+the measures of central tendency (i.e., the first moment). Modify it to compute
+a measure of dispersion (i.e., the second moment).
+
+```{r moments, exercise = TRUE}
+billboard %>% 
+    summarize(
+        mean_tempo = mean(tempo),
+        mean_loudness = mean(loudness),
+        mean_danceability = mean(danceability),
+        mean_duration_s = mean(duration_seconds),
+        mean_duration_b = mean(duration_beats)
+    )
+```
+
+## Categorical-Variable Tests
+
+There are two important categorical variables for these data: `tonic` and 
+`mode`.
+
+### Chi-Square Test
+
+To see whether there is a relationship between them, we need to use a
+$\chi$~2~ test:
+
+```{r chisq, exercise = TRUE}
+chisq.test(billboard$tonic, billboard$mode)
+```
+
+We would report the results as follows:
+
+> There was a significant relationship between tonic and mode, $\chi$~2~(11) = 106, *p* < .001.
+
+What is the null hypothesis for this test?
+
+### Effect Size: Odds Ratio
+
+Every statistical test is better when we report a standard effect size. Andy
+Field doesn't provide good code for the effect size for $\chi$~2~ tests, but
+here is a template that you can use in your own work.
+
+```{r contingency, exercise = TRUE}
+billboard %>% 
+    group_by(tonic) %>% 
+    count(mode) %>% 
+    spread(mode, n) %>% 
+    ungroup %>% 
+    mutate(
+        major_odds = major / (sum(major) - major),
+        minor_odds = minor / (sum(minor) - minor),
+        odds_ratio = minor_odds / major_odds)
+```
+
+## Continuous-Variable Tests
+
+This data set contains many possible pairs of continuous variables.
+
+### Scatter plot
+
+The following code produces a scatter plot of tempo vs. duration in seconds.
+Modify it to show a scatter plot of tempo vs. danceability.
+
+```{r tempo-duration-plot, exercise = TRUE}
+ggplot(billboard, aes(x = tempo, y = duration_seconds)) +
+    geom_point() +
+    geom_smooth() +
+    labs(x = "Tempo (BPM)", y = "Duration (s)")
+```
+
+```{r tempo-duration-quiz}
+quiz(
+    question(
+        "Which of the following tempi does Spotify rate the most danceable?",
+        answer("80"),
+        answer("120", correct = TRUE),
+        answer("180"),
+        allow_retry = TRUE
+    )
+)
+```
+
+### Correlation Test
+
+For these pairs, we want to test whether their correlations are significant.
+For example, is there a significant correlation between tempo and the length of
+a song in seconds?
+
+```{r tempo-duration, exercise = TRUE}
+cor.test(billboard$tempo, billboard$duration_seconds)
+```
+
+We would report the results of this test as follows.
+
+> There was no significant relationship between tempo and duration in seconds, *t*(886) = --1.2, *p* = .25, *r* = --.04.
+
+Use the box above to check for significant correlations between tempo and danceability.
+
+```{r tempo-danceability}
+quiz(
+    question(
+        "Are tempo and danceability significantly correlated (alpha = .05)?",
+        answer("Yes", correct = TRUE),
+        answer("No")
+    )
+)
+```
+
+Do these results correspond to what you expected from the scatter plot? Why or 
+why not?
+
+### Effect Size: Correlation Coefficient
+
+Correlation coefficients are already standardised effect sizes -- do you 
+remember the cut-offs for small, medium, and large effects? -- and so we do not
+need to compute anything extra for a correlation test.
+
+### Dependent (Paired) *t* Tests
+
+If there are two continuous variables on the same scale, we can supplement a
+correlation test with a paired (dependent) *t* test. For example, Spotify 
+estimates the duration of a song in beats separately from its estimate of the
+tempo of a song (in beats per minute). Because we have the duration of every
+song in seconds, we can compute how many beats long a
+song 'should' be, based on Spotify's tempo estimate. Let's call that estimate
+`tempo_beats`.
+
+```{r tempo-beats, echo = TRUE}
+billboard_plus <-
+    billboard %>% 
+    mutate(tempo_beats = tempo * duration_seconds / 60)
+billboard_plus
+```
+
+Now, `tempo_beats` and `duration_beats` are on the same scale (i.e., they use 
+the same unit of measurement, namely, musical beats). 
+
+A scatter plot shows an interesting relationship between these two variables.
+(Bonus question: Can you think of a reason why we might see this pattern?)
+
+```{r tempo-plot, echo = TRUE}
+ggplot(billboard_plus, aes(x = duration_beats, y = tempo_beats)) +
+    geom_point() +
+    labs(x = "Actual Duration (beats)", y = "Theoretical Duration (beats)")
+```
+
+As we would expect, the two variables are highly correlated.
+
+```{r dep-cor, echo = TRUE}
+cor.test(billboard_plus$duration_beats, billboard_plus$tempo_beats)
+```
+
+But in addition to the correlation, we might also be interested in whether the
+the theoretical duration in beats (`tempo_beats`) is systematically higher or
+lower than the actual duration in beats. 
+
+```{r dep-means, echo = TRUE}
+billboard_plus %>% 
+    summarise(
+        mean_duration_beats = mean(duration_beats),
+        mean_tempo_beats = mean(tempo_beats))
+```
+
+This comparision is a difference in
+two means, and so we need a *t* test. Because our variables are paired, however,
+we need to use the paired (dependent) *t* test.
+
+```{r dep-t, echo = TRUE}
+t.test(billboard_plus$duration_beats, billboard_plus$tempo_beats, paired = TRUE)
+```
+
+We also need to compute Cohen's *d* (see next section).
+
+```{r dep-d, echo = TRUE}
+cohen.d(billboard_plus$duration_beats, billboard_plus$tempo_beats)
+```
+
+We would report all of these tests together as follows:
+
+> The theoretical duration of songs in beats, based on Spotify's tempo estimate, and the actual duration in beats were highly correlated, *t*(886) = 25, *p* < .001, *r* = .64, but the tempo-based estimate of duration in beats was systematically higher than the actual duration in beats, *M* = 36 beats, *t*(887) = 7.7, *p* < .001, *d* = .22.
+
+## Mixed-Variable Tests
+
+Of the two categorical variables in these data, one has two categories (i.e., 
+is binary) and one has multiple categories.
+
+### Box plots
+
+The following code generate a box plot illustrating the distribution of song
+durations (in seconds) versus mode. Modify it to make a box plot showing the
+distributions of danceability for each mode. Then modify it again to show the
+distributions of danceability for each tonic.
+
+```{r boxes, exercise = TRUE}
+ggplot(billboard, aes(x = tonic, y = duration_seconds)) +
+    geom_boxplot() +
+    labs(x = "Mode", y = "Duration (s)")
+```
+
+### Independent *t* Tests
+
+The following code conducts a *t* test for the difference in duration (in
+seconds) between modes. 
+
+```{r t-ind, exercise = TRUE}
+t.test(billboard$duration_seconds ~ billboard$mode)
+```
+
+We also need to compute Cohen's *d* as a standardised effect size for a *t*
+test.
+
+```{r d-ind, exercise = TRUE}
+cohen.d(billboard$duration_seconds ~ billboard$mode)
+```
+
+We would report the results of the test as follows:
+
+> There was a small but significant effect of mode (major vs. minor) on song duration in seconds, *t*(323) = 3.6, *p* < .001, *d* = .32.
+
+Modify the code blocks above to conduct a *t* test for the difference in 
+danceability between modes.
+
+```{r d-size-quiz}
+quiz(
+    question(
+        "Although the point estimate of Cohen's *d* represents a small effect of mode on danceablity, based on the 95-percent confidence interval, what is the largest possible effect size we could consider?",
+        answer("Negligible"),
+        answer("Small"),
+        answer("Medium", correct = TRUE),
+        answer("Large"),
+        incorrect = "Incorrect. Remember, for Cohen's *d*, a small effect is beyond 0.2, a medium-sized effect is beyond 0.5, and a large effect is beyond 0.8.",
+        allow_retry = TRUE
+    )
+)
+```
+
+### ANOVA
+
+The following tests conducts an ANOVA on differences in average duration (in
+seconds) for different tonics.
+
+```{r anova, exercise = TRUE}
+oneway.test(billboard$duration_seconds ~ billboard$tonic)
+```
+
+We would report the results of the test like this:
+
+> ANOVA showed no significant difference in average song duration across
+tonics, *F*(11, 259) = 1.3, *p* = .20.
+
+Because the result is not statistically significant, usually we would stop here,
+but if the result had been significant, the next step would to look at *t* tests
+for every possible pair of tonics. When we conduct multiple *t* tests at the
+same time, it is important to correct for making multiple comparisions:
+otherwise our changes of making a Type I error are much larger than we 
+planned! Let's check the tests for this ANOVA.
+
+```{r post-hoc, exercise = TRUE}
+pairwise.t.test(billboard$duration_seconds, billboard$tonic)
+```
+
+None of the pairs shows a significant result, which is not surprising: that
+is why our original `oneway.test` was not significant.
+
+Modify the above code chunks to test differences in loudness across modes.
+
+```{r anova-quiz}
+quiz(
+    question(
+        "Which of the following pairs of tonics shows a significant 
+        difference in loudness?",
+        answer("E and F-sharp"),
+        answer("B and E", correct = TRUE),
+        answer("B and F"),
+        answer("F and F-sharp"),
+        random_answer_order = TRUE,
+        allow_retry = TRUE
+    )
+)
+```
+
