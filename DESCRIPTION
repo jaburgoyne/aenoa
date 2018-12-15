@@ -1,0 +1,17 @@
+Package: aenoa
+Type: Package
+Title: Analyse- en Onderzoeksmethoden A
+Version: 0.1.0
+Author: John Ashley Burgoyne <j.a.burgoyne@uva.nl>
+Maintainer: John Ashley Burgoyne <j.a.burgoyne@uva.nl>
+Description: Tutorials for Analyse- en Onderzoeksmethoden A.
+License: GPL-3
+Encoding: UTF-8
+Depends:
+  R (>= 3.5.0),
+  learnr,
+  tidyverse
+LazyData: true
+Imports:
+  effsize
+RoxygenNote: 6.1.1
