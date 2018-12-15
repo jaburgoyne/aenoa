@@ -1,4 +1,4 @@
----
+---ew
 title: "Four Statistical Tests"
 author: John Ashley Burgoyne
 output: learnr::tutorial
@@ -46,10 +46,10 @@ contains eight columns.
 
 Use the box below to view the raw data.
 
-```{r billboard-view, exercise = TRUE}
+```{r billboard_view, exercise = TRUE}
 ```
 
-```{r billboard-view-solution}
+```{r billboard_view-solution}
 billboard
 ```
 
