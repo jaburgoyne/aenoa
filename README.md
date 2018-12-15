@@ -11,7 +11,7 @@ not otherwise change them or claim them as your own:
 To install the package from RStudio, run the following commands:
 
     library(devtools)
-    install_github("jaburgoyne/aenoa")`
+    install_github("jaburgoyne/aenoa")
 
 ## Tutorials
 
